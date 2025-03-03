@@ -1,7 +1,10 @@
+"use client";
+
+import type React from "react";
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTranslation } from "react-i18next";
 import {
   User,
   Mail,
@@ -9,38 +12,58 @@ import {
   Calendar,
   MapPin,
   Globe,
-  Building,
   Camera,
   Save,
   Loader2,
   FileText,
-  Plus,
   Briefcase,
+  Plus,
   Eye,
   Trash2,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import ResumeWizard from "./ResumeWizard";
+import ResumeWizard from "../../pages/Profile/ResumeWizard";
+
+// Resume interface
+interface Resume {
+  id: number;
+  title: string;
+  name: string;
+  phone: string;
+  email: string;
+  skills: string[];
+}
 
 const Profile = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateProfile } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    updateProfile,
+    isLoading: authLoading,
+  } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showResumeWizard, setShowResumeWizard] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
-    username: user?.username || "",
-    dateOfBirth: user?.dateOfBirth || "",
-    country: user?.country || "",
-    region: user?.region || "",
-    phone: user?.phone || "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    username: "",
+    dateOfBirth: "",
+    country: "",
+    region: "",
+    district: "",
+    placeOfEducation: "",
+    phone: "",
+    gender: "",
+    publishPhone: false,
+    publicStatus: false,
   });
 
-  // Mock resumes data - in a real app, this would come from your backend
-  const [resumes, setResumes] = useState([
+  // Mock resumes data
+  const [resumes, setResumes] = useState<Resume[]>([
     {
       id: 1,
       title: "Frontend Developer",
@@ -51,54 +74,82 @@ const Profile = () => {
     },
   ]);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !authLoading) {
       navigate("/login");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Initialize form data with user data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        username: user.username || "",
+        dateOfBirth: user.dateOfBirth || "",
+        country: user.country || "",
+        region: user.region || "",
+        district: user.district || "",
+        placeOfEducation: user.placeOfEducation || "",
+        phone: user.phone || "",
+        gender: user.gender || "",
+        publishPhone: user.publishPhone || false,
+        publicStatus: user.publicStatus || false,
+      });
+    }
+  }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  // Handle form input changes
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setSuccessMessage(null);
 
     try {
-      // Send the updated profile data to the server
-      const response = await fetch("http://127.0.0.1:8000/profile/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      await updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dateOfBirth: formData.dateOfBirth,
+        country: formData.country,
+        region: formData.region,
+        district: formData.district,
+        placeOfEducation: formData.placeOfEducation,
+        phone: formData.phone,
+        gender: formData.gender,
+        publishPhone: formData.publishPhone,
+        publicStatus: formData.publicStatus,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
-      }
+      // Show success message
+      setSuccessMessage("Profile updated successfully!");
 
-      const updatedUser = await response.json();
-
-      // Update the local user state with the response from the server
-      updateProfile(updatedUser);
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      // Handle error (e.g., show error message to user)
+      console.error("Error updating profile:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle avatar change
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -110,9 +161,14 @@ const Profile = () => {
     }
   };
 
+  // Handle resume deletion
   const handleDeleteResume = (id: number) => {
     setResumes((prev) => prev.filter((resume) => resume.id !== id));
   };
+
+  if (!isAuthenticated && !authLoading) {
+    return null;
+  }
 
   return (
     <div className="pt-20 min-h-screen bg-gray-900">
@@ -131,7 +187,9 @@ const Profile = () => {
                   <img
                     src={
                       user?.avatar ||
-                      `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=random`
+                      `https://ui-avatars.com/api/?name=${
+                        formData.firstName || "User"
+                      }+${formData.lastName}&background=random`
                     }
                     alt={`${formData.firstName} ${formData.lastName}`}
                     className="w-32 h-32 rounded-xl object-cover border-4 border-gray-800"
@@ -151,6 +209,13 @@ const Profile = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-8 pt-20">
+              {successMessage && (
+                <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-500 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  {successMessage}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* First Name */}
                 <div>
@@ -201,6 +266,7 @@ const Profile = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Enter your email"
+                      disabled
                     />
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
@@ -219,6 +285,7 @@ const Profile = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Choose a username"
+                      disabled
                     />
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
@@ -238,6 +305,26 @@ const Profile = () => {
                       className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Gender
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
                   </div>
                 </div>
 
@@ -292,6 +379,74 @@ const Profile = () => {
                       placeholder="Enter your region"
                     />
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    District
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="district"
+                      value={formData.district}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter your district"
+                    />
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Place of Education */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Place of Education
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="placeOfEducation"
+                      value={formData.placeOfEducation}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter your place of education"
+                    />
+                    <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Publish Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Publish Phone
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="publishPhone"
+                      checked={formData.publishPhone}
+                      onChange={handleChange}
+                      className="w-5 h-5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Public Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Public Status
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="publicStatus"
+                      checked={formData.publicStatus}
+                      onChange={handleChange}
+                      className="w-5 h-5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
                   </div>
                 </div>
               </div>

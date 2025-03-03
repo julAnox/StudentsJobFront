@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 interface ResumeWizardProps {
   isOpen: boolean;
@@ -32,57 +32,61 @@ interface FormData {
 }
 
 const initialFormData: FormData = {
-  name: '',
-  surname: '',
-  email: '',
-  dateOfBirth: '',
-  country: '',
-  city: '',
-  gender: '',
-  phone: '',
-  profession: '',
-  experience: '',
-  education: '',
-  institutionName: '',
-  graduationYear: '',
-  specialization: '',
+  name: "",
+  surname: "",
+  email: "",
+  dateOfBirth: "",
+  country: "",
+  city: "",
+  gender: "",
+  phone: "",
+  profession: "",
+  experience: "",
+  education: "",
+  institutionName: "",
+  graduationYear: "",
+  specialization: "",
   skills: [],
-  contacts: ''
+  contacts: "",
 };
 
 const educationOptions = [
-  'High School',
-  'Vocational',
-  'Incomplete Higher',
-  'Higher',
+  "High School",
+  "Vocational",
+  "Incomplete Higher",
+  "Higher",
   "Bachelor's",
   "Master's",
-  'PhD',
-  'Doctor of Sciences'
+  "PhD",
+  "Doctor of Sciences",
 ];
 
 const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleEducationSelect = (education: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      education
+      education,
     }));
   };
 
   const handleNext = () => {
     if (step < 4) {
-      setStep(prev => prev + 1);
+      setStep((prev) => prev + 1);
     } else {
       onComplete(formData);
     }
@@ -90,7 +94,7 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(prev => prev - 1);
+      setStep((prev) => prev - 1);
     }
   };
 
@@ -98,9 +102,11 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-2">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -111,7 +117,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Surname</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Surname
+              </label>
               <input
                 type="text"
                 name="surname"
@@ -122,7 +130,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -133,7 +143,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Date of Birth
+              </label>
               <input
                 type="date"
                 name="dateOfBirth"
@@ -143,7 +155,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Country
+              </label>
               <input
                 type="text"
                 name="country"
@@ -154,7 +168,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                City
+              </label>
               <input
                 type="text"
                 name="city"
@@ -165,7 +181,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Gender</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Gender
+              </label>
               <select
                 name="gender"
                 value={formData.gender}
@@ -179,7 +197,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Phone
+              </label>
               <input
                 type="tel"
                 name="phone"
@@ -195,7 +215,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Profession</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Profession
+              </label>
               <input
                 type="text"
                 name="profession"
@@ -206,7 +228,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Experience</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Experience
+              </label>
               <textarea
                 name="experience"
                 value={formData.experience}
@@ -222,17 +246,19 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Education</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Education
+              </label>
               <div className="grid grid-cols-2 gap-4">
-                {educationOptions.map(option => (
+                {educationOptions.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => handleEducationSelect(option)}
                     className={`p-4 rounded-lg border ${
                       formData.education === option
-                        ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                        : 'border-gray-600 text-gray-400 hover:border-gray-500'
+                        ? "border-emerald-500 bg-emerald-500/10 text-white"
+                        : "border-gray-600 text-gray-400 hover:border-gray-500"
                     } transition-colors text-left`}
                   >
                     {option}
@@ -241,7 +267,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Institution Name</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Institution Name
+              </label>
               <input
                 type="text"
                 name="institutionName"
@@ -252,7 +280,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Graduation Year</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Graduation Year
+              </label>
               <input
                 type="text"
                 name="graduationYear"
@@ -263,7 +293,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Specialization</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Specialization
+              </label>
               <input
                 type="text"
                 name="specialization"
@@ -279,7 +311,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Skills</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Skills
+              </label>
               <input
                 type="text"
                 name="skills"
@@ -288,7 +322,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Contacts</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Contacts
+              </label>
               <textarea
                 name="contacts"
                 value={formData.contacts}
@@ -328,7 +364,9 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
               >
                 <X className="w-6 h-6" />
               </button>
-              <h2 className="text-2xl font-bold text-white">Create your resume on Student's Job</h2>
+              <h2 className="text-2xl font-bold text-white">
+                Create your resume on Student's Job
+              </h2>
               <p className="text-gray-400 mt-2">Step {step} of 4</p>
               <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div
@@ -339,9 +377,7 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
             </div>
 
             {/* Content */}
-            <div className="p-6">
-              {renderStep()}
-            </div>
+            <div className="p-6">{renderStep()}</div>
 
             {/* Footer */}
             <div className="p-6 border-t border-gray-700 flex justify-between">
@@ -357,7 +393,7 @@ const ResumeWizard = ({ isOpen, onClose, onComplete }: ResumeWizardProps) => {
                 onClick={handleNext}
                 className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors flex items-center gap-2"
               >
-                {step === 4 ? 'Finish' : 'Next'}
+                {step === 4 ? "Finish" : "Next"}
                 {step < 4 && <ChevronRight className="w-5 h-5" />}
               </button>
             </div>

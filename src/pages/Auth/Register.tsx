@@ -4,11 +4,11 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import {
-  UserPlusIcon,
-  MailIcon,
-  LockIcon,
-  EyeIcon,
-  EyeOffIcon,
+  UserPlus,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -82,31 +82,7 @@ const Register = () => {
     setServerError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/signup/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password1: formData.password1,
-          password2: formData.password2,
-        }),
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
-      }
-
       await signup(formData.email, formData.password1);
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
       navigate("/profile");
     } catch (error) {
       setServerError(
@@ -142,7 +118,7 @@ const Register = () => {
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MailIcon className="h-5 w-5 text-gray-400" />
+                <Mail className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 id="email"
@@ -173,7 +149,7 @@ const Register = () => {
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <LockIcon className="h-5 w-5 text-gray-400" />
+                <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 id="password1"
@@ -192,9 +168,9 @@ const Register = () => {
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
                 {showPassword1 ? (
-                  <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-300" />
+                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                 ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-300" />
+                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                 )}
               </button>
             </div>
@@ -215,7 +191,7 @@ const Register = () => {
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <LockIcon className="h-5 w-5 text-gray-400" />
+                <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 id="password2"
@@ -234,9 +210,9 @@ const Register = () => {
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
                 {showPassword2 ? (
-                  <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-300" />
+                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                 ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-300" />
+                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                 )}
               </button>
             </div>
@@ -291,7 +267,7 @@ const Register = () => {
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <UserPlusIcon className="w-5 h-5" />
+              <UserPlus className="w-5 h-5" />
             )}
             {t("auth.register.createAccount")}
           </button>

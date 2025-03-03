@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import logo from "../../assets/logo.png";
 
 const Header = () => {
   const { t, i18n } = useTranslation();
@@ -38,9 +39,9 @@ const Header = () => {
           {/* Logo */}
           <NavLink
             to="/"
-            className="flex items-center gap-2 text-xl md:text-2xl font-bold text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+            className="flex items-center gap-4 text-xl md:text-2xl font-bold text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
           >
-            <BriefcaseIcon className="w-8 h-8" />
+            <img src={logo} alt="" className="w-10" />
             <span className="hidden xs:block">Student's Job</span>
           </NavLink>
 

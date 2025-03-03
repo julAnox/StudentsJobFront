@@ -1,16 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import {
-  LogInIcon,
-  MailIcon,
-  LockIcon,
-  EyeIcon,
-  EyeOffIcon,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { LogIn, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Login = () => {
@@ -68,30 +60,7 @@ const Login = () => {
     setServerError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
       await login(formData.email, formData.password);
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
       navigate("/profile");
     } catch (error) {
       setServerError(
@@ -126,7 +95,7 @@ const Login = () => {
               {t("auth.login.email")}
             </label>
             <div className="relative">
-              <MailIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 id="email"
                 name="email"
@@ -152,7 +121,7 @@ const Login = () => {
               {t("auth.login.password")}
             </label>
             <div className="relative">
-              <LockIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 id="password"
                 name="password"
@@ -170,9 +139,9 @@ const Login = () => {
                 className="absolute right-3 top-3"
               >
                 {showPassword ? (
-                  <EyeOffIcon className="h-5 w-5 text-gray-400" />
+                  <EyeOff className="h-5 w-5 text-gray-400" />
                 ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
+                  <Eye className="h-5 w-5 text-gray-400" />
                 )}
               </button>
             </div>
@@ -218,7 +187,7 @@ const Login = () => {
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <LogInIcon className="w-5 h-5" />
+              <LogIn className="w-5 h-5" />
             )}
             {t("auth.login.signIn")}
           </button>
