@@ -1,8 +1,4 @@
-"use client";
-
-import type React from "react";
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,11 +17,11 @@ import {
   Eye,
   Trash2,
   CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import ResumeWizard from "../../pages/Profile/ResumeWizard";
+import ResumeWizard from "./ResumeWizard";
 
-// Resume interface
 interface Resume {
   id: number;
   title: string;
@@ -42,10 +38,13 @@ const Profile = () => {
     isAuthenticated,
     updateProfile,
     isLoading: authLoading,
+    fetchUserProfile,
   } = useAuth();
+
   const [isLoading, setIsLoading] = useState(false);
   const [showResumeWizard, setShowResumeWizard] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -62,7 +61,6 @@ const Profile = () => {
     publicStatus: false,
   });
 
-  // Mock resumes data
   const [resumes, setResumes] = useState<Resume[]>([
     {
       id: 1,
@@ -74,14 +72,22 @@ const Profile = () => {
     },
   ]);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+    const checkAuth = async () => {
+      if (!isAuthenticated && !authLoading) {
+        navigate("/login");
+      } else if (isAuthenticated && user?.id) {
+        try {
+          await fetchUserProfile();
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        }
+      }
+    };
 
-  // Initialize form data with user data
+    checkAuth();
+  }, []);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -102,7 +108,6 @@ const Profile = () => {
     }
   }, [user]);
 
-  // Handle form input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -114,59 +119,83 @@ const Profile = () => {
     }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setSuccessMessage(null);
+    setErrorMessage(null);
 
     try {
-      await updateProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        dateOfBirth: formData.dateOfBirth,
-        country: formData.country,
-        region: formData.region,
-        district: formData.district,
-        placeOfEducation: formData.placeOfEducation,
-        phone: formData.phone,
-        gender: formData.gender,
-        publishPhone: formData.publishPhone,
-        publicStatus: formData.publicStatus,
-      });
+      const result = await updateProfile(
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: formData.dateOfBirth,
+          country: formData.country,
+          region: formData.region,
+          district: formData.district,
+          placeOfEducation: formData.placeOfEducation,
+          phone: formData.phone,
+          gender: formData.gender,
+          publishPhone: formData.publishPhone,
+          publicStatus: formData.publicStatus,
+        },
+        true
+      );
 
-      // Show success message
+      if (!result) {
+        setErrorMessage(
+          "Failed to update profile. Please try logging in again."
+        );
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+        return;
+      }
+
       setSuccessMessage("Profile updated successfully!");
 
-      // Hide success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
     } catch (error) {
       console.error("Error updating profile:", error);
+      setErrorMessage(
+        "An error occurred while updating your profile. Please try again."
+      );
+
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 3000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle avatar change
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateProfile({ avatar: reader.result as string });
+        updateProfile({ avatar: reader.result as string }, false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle resume deletion
   const handleDeleteResume = (id: number) => {
     setResumes((prev) => prev.filter((resume) => resume.id !== id));
   };
 
-  if (!isAuthenticated && !authLoading) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -174,13 +203,11 @@ const Profile = () => {
     <div className="pt-20 min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="lg:col-span-2 bg-gray-800 rounded-xl shadow-xl overflow-hidden"
           >
-            {/* Header */}
             <div className="relative h-48 bg-gradient-to-r from-emerald-600 to-blue-600">
               <div className="absolute -bottom-16 left-8">
                 <div className="relative">
@@ -207,7 +234,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="p-8 pt-20">
               {successMessage && (
                 <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-500 flex items-center gap-2">
@@ -216,8 +242,14 @@ const Profile = () => {
                 </div>
               )}
 
+              {errorMessage && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  {errorMessage}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* First Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     First Name
@@ -235,7 +267,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Last Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Last Name
@@ -253,7 +284,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Email
@@ -272,7 +302,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Username */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Username
@@ -291,7 +320,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Date of Birth */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Date of Birth
@@ -308,7 +336,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Gender */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Gender
@@ -328,7 +355,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Phone
@@ -346,7 +372,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Country */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Country
@@ -364,7 +389,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Region */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Region
@@ -382,7 +406,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* District */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     District
@@ -400,7 +423,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Place of Education */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Place of Education
@@ -418,7 +440,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Publish Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Publish Phone
@@ -434,7 +455,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Public Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">
                     Public Status
@@ -451,7 +471,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="mt-8 flex justify-end">
                 <button
                   type="submit"
@@ -469,7 +488,6 @@ const Profile = () => {
             </form>
           </motion.div>
 
-          {/* Resumes Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -517,9 +535,7 @@ const Profile = () => {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => {
-                          /* Handle view */
-                        }}
+                        onClick={() => {}}
                         className="p-2 text-gray-400 hover:text-white transition-colors"
                       >
                         <Eye className="w-5 h-5" />
@@ -548,13 +564,12 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Resume Creation Wizard */}
       <AnimatePresence>
         {showResumeWizard && (
           <ResumeWizard
             isOpen={showResumeWizard}
             onClose={() => setShowResumeWizard(false)}
-            onComplete={(resumeData) => {
+            onComplete={(resumeData: any) => {
               setResumes((prev) => [
                 ...prev,
                 { id: Date.now(), ...resumeData },

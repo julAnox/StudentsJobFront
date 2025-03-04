@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+"use client";
+
+import type React from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -7,7 +10,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const Login = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -19,6 +22,14 @@ const Login = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+
+  useEffect(() => {
+    if ((isAuthenticated && !isLoading) || loginSuccess) {
+      console.log("User is authenticated, redirecting to profile");
+      navigate("/profile");
+    }
+  }, [isAuthenticated, isLoading, loginSuccess, navigate]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -60,13 +71,22 @@ const Login = () => {
     setServerError(null);
 
     try {
-      await login(formData.email, formData.password);
-      navigate("/profile");
+      const user = await login(formData.email, formData.password);
+      console.log("Login successful, user:", user);
+
+      if (user && user.id) {
+        setLoginSuccess(true);
+
+        navigate("/profile");
+      } else {
+        setServerError(
+          "Login successful but user ID is missing. Please try again."
+        );
+      }
     } catch (error) {
       setServerError(
         error instanceof Error ? error.message : "An unexpected error occurred"
       );
-    } finally {
       setLoading(false);
     }
   };

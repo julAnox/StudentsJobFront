@@ -1,6 +1,10 @@
-"use client";
-
-import { createContext, useState, useContext, type ReactNode } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  type ReactNode,
+  useEffect,
+} from "react";
 
 export interface User {
   id: string;
@@ -26,8 +30,12 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
   signup: (email: string, password: string) => Promise<User | null>;
-  logout: () => void;
-  updateProfile: (data: Partial<User>) => Promise<User | null>;
+  logout: () => Promise<void>;
+  updateProfile: (
+    data: Partial<User>,
+    saveToServer?: boolean
+  ) => Promise<User | null>;
+  fetchUserProfile: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -42,18 +50,98 @@ export const useAuth = () => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    }
+    return null;
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (user) {
+          const result = await fetchUserProfile();
+          if (!result) {
+            setUser(null);
+            localStorage.removeItem("user");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const fetchUserProfile = async (): Promise<User | null> => {
+    try {
+      if (!user || !user.id) return null;
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/profile/?user=${user.id}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.auth_user) {
+          const userData: User = {
+            id: data.auth_user.id,
+            email: data.auth_user.email || "",
+            firstName: data.auth_user.first_name || "",
+            lastName: data.auth_user.last_name || "",
+            username: data.auth_user.username || "",
+            dateOfBirth: data.auth_user.birthday || "",
+            country: data.auth_user.country || "",
+            region: data.auth_user.region || "",
+            phone: data.auth_user.phone || "",
+            gender: data.auth_user.gender || "",
+            district: data.auth_user.district || "",
+            placeOfEducation: data.auth_user.place_of_education || "",
+            publishPhone: data.auth_user.publish_phone || false,
+            publicStatus: data.auth_user.public_status || false,
+          };
+          setUser(userData);
+          localStorage.setItem("user", JSON.stringify(userData));
+          return userData;
+        }
+      } else if (response.status === 401) {
+        setUser(null);
+        localStorage.removeItem("user");
+        return null;
+      }
+      return user;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return user;
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      document.cookie.split(";").forEach((cookie) => {
+        const [name] = cookie.trim().split("=");
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      });
+
       const response = await fetch("http://127.0.0.1:8000/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
@@ -62,15 +150,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Login failed");
       }
 
-      // Create user object with basic data
-      const user: User = {
-        id: data.user,
+      const data = await response.json();
+
+      const basicUser: User = {
+        id: data.user || "",
         email: email,
         firstName: "",
         lastName: "",
@@ -86,10 +174,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         publicStatus: false,
       };
 
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
+      setUser(basicUser);
+      localStorage.setItem("user", JSON.stringify(basicUser));
 
-      return user;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      try {
+        await fetchUserProfile();
+      } catch (error) {
+        console.warn("Could not fetch full profile after login:", error);
+      }
+
+      return basicUser;
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -101,10 +197,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      document.cookie.split(";").forEach((cookie) => {
+        const [name] = cookie.trim().split("=");
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      });
+
       const response = await fetch("http://127.0.0.1:8000/signup/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
@@ -114,15 +216,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Registration failed");
       }
 
-      // Create user object with basic data
-      const user: User = {
-        id: data.user,
+      const data = await response.json();
+
+      const basicUser: User = {
+        id: data.user || "",
         email: email,
         firstName: "",
         lastName: "",
@@ -138,10 +240,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         publicStatus: false,
       };
 
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
+      setUser(basicUser);
+      localStorage.setItem("user", JSON.stringify(basicUser));
 
-      return user;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      try {
+        await fetchUserProfile();
+      } catch (error) {
+        console.warn("Could not fetch full profile after signup:", error);
+      }
+
+      return basicUser;
     } catch (error) {
       console.error("Signup error:", error);
       throw error;
@@ -150,30 +260,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      await fetch("http://127.0.0.1:8000/logout/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("user");
+
+      document.cookie.split(";").forEach((cookie) => {
+        const [name] = cookie.trim().split("=");
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      });
+    }
   };
 
-  const updateProfile = async (data: Partial<User>) => {
+  const updateProfile = async (data: Partial<User>, saveToServer = false) => {
     if (!user) return null;
 
-    setIsLoading(true);
     try {
-      // First, update the local user data
       const updatedUser: User = {
         ...user,
         ...data,
       };
 
-      // Then try to update on the server with proper authentication
-      const response = await fetch("http://127.0.0.1:8000/profile/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Important for sending cookies
-        body: JSON.stringify({
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      if (saveToServer) {
+        setIsLoading(true);
+
+        const serverData = {
           first_name: updatedUser.firstName,
           last_name: updatedUser.lastName,
           birthday: updatedUser.dateOfBirth,
@@ -185,50 +310,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           gender: updatedUser.gender,
           publish_phone: updatedUser.publishPhone,
           public_status: updatedUser.publicStatus,
-        }),
-      });
+        };
 
-      if (!response.ok) {
-        if (response.status === 401) {
+        const response = await fetch(
+          `http://127.0.0.1:8000/profile/?user=${updatedUser.id}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(serverData),
+          }
+        );
+
+        if (!response.ok) {
           console.warn(
-            "Authentication error. Attempting to refresh session..."
+            `Server returned ${response.status} when updating profile`
           );
 
-          // You might need to implement a session refresh mechanism here
-          // For example, you could call a refresh token endpoint
+          if (response.status === 401) {
+            const refreshResult = await fetchUserProfile();
+            if (!refreshResult) {
+              setUser(null);
+              localStorage.removeItem("user");
+              return null;
+            }
 
-          // For now, we'll still update the local state
-          console.warn(
-            "Continuing with local update despite authentication error"
-          );
-        } else {
-          console.warn(
-            `Server returned ${response.status}, but continuing with local update`
-          );
+            const retryResponse = await fetch(
+              `http://127.0.0.1:8000/profile/?user=${updatedUser.id}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify(serverData),
+              }
+            );
+
+            if (!retryResponse.ok) {
+              console.error("Profile update failed even after session refresh");
+              return updatedUser;
+            }
+          }
         }
-      } else {
-        console.log("Profile updated successfully on server");
       }
-
-      // Update local state regardless of server response
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
 
       return updatedUser;
     } catch (error) {
       console.error("Error updating profile:", error);
-
-      // Still update local state even if server request failed
-      if (user) {
-        const updatedUser: User = {
-          ...user,
-          ...data,
-        };
-        setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-        return updatedUser;
-      }
-      return null;
+      return user;
     } finally {
       setIsLoading(false);
     }
@@ -244,6 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         updateProfile,
+        fetchUserProfile,
       }}
     >
       {children}
